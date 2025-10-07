@@ -31,6 +31,13 @@
   canvas{width:100%;max-width:700px;height:160px;display:block;margin-top:6px;}
   @media (max-width:680px){ body{padding:12px} button{padding:10px 12px;font-size:.95rem} .grid-2{grid-template-columns:1fr;} }
   body.dark{--bg:#0b0b0c;--fg:#e6e6e8;--card:#161617;--muted:#a1a1a6;--accent:#0a84ff;--shadow:0 6px 18px rgba(0,0,0,0.25)}
+  /* Modal transitions */
+  #recordModal { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+  #recordModal #recordOverlay { position: absolute; inset: 0; background: rgba(0,0,0,0.45); opacity: 0; transition: opacity .22s ease; }
+  .modal-card { max-width:760px; width:100%; position:relative; z-index:9999; transform: translateY(8px) scale(.98); opacity: 0; transition: transform .22s cubic-bezier(.2,.9,.2,1), opacity .18s ease; }
+  #recordModal.open { pointer-events: auto; }
+  #recordModal.open #recordOverlay { opacity: 1; }
+  #recordModal.open .modal-card { transform: translateY(0) scale(1); opacity: 1; }
 </style>
 </head>
 <body>
@@ -61,102 +68,99 @@
     </div>
   </div>
 
-  <!-- RECORD -->
-  <div id="record" class="screen">
-    <h2>Registra giornata</h2>
-    <div class="card">
-      <div class="grid-2">
-        <div>
-          <label for="date">Data</label>
-          <input id="date" type="date"/>
+  <!-- RECORD modal -->
+  <div id="recordModal">
+    <div id="recordOverlay">
+      <div class="card modal-card">
+        <h2 style="margin-top:0;">Registra giornata</h2>
+        <div class="grid-2">
+          <div>
+            <label for="date">Data</label>
+            <input id="date" type="date"/>
+          </div>
+          <div>
+            <label for="colazione_tipo">Colazione — tipo</label>
+            <select id="colazione_tipo">
+              <option value="">Seleziona…</option>
+              <option>proteica</option>
+              <option>mista</option>
+              <option>dolce</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label for="colazione_tipo">Colazione — tipo</label>
-          <select id="colazione_tipo">
-            <option value="">Seleziona…</option>
-            <option>proteica</option>
-            <option>mista</option>
-            <option>dolce</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="grid-2">
-        <div>
-          <label for="ore_sonno">Ore di sonno (h.decimali)</label>
-          <input id="ore_sonno" type="number" step="0.1" min="0" max="14" placeholder="es. 7.5"/>
+        <div class="grid-2">
+          <div>
+            <label for="ore_sonno">Ore di sonno (h.decimali)</label>
+            <input id="ore_sonno" type="number" step="0.1" min="0" max="14" placeholder="es. 7.5"/>
+          </div>
+          <div>
+            <label for="qualita_sonno">Qualità sonno (0–10)</label>
+            <input id="qualita_sonno" type="number" step="1" min="0" max="10"/>
+          </div>
         </div>
-        <div>
-          <label for="qualita_sonno">Qualità sonno (0–10)</label>
-          <input id="qualita_sonno" type="number" step="1" min="0" max="10"/>
-        </div>
-      </div>
 
-      <div class="grid-2">
-        <div>
-          <label for="caffeina_qta">Caffeina — quantità (n° caffè)</label>
-          <input id="caffeina_qta" type="number" step="1" min="0" max="10"/>
+        <div class="grid-2">
+          <div>
+            <label for="caffeina_qta">Caffeina — quantità (n° caffè)</label>
+            <input id="caffeina_qta" type="number" step="1" min="0" max="10"/>
+          </div>
+          <div>
+            <label for="caffeina_orario">Caffeina — orario principale</label>
+            <input id="caffeina_orario" type="time"/>
+          </div>
         </div>
-        <div>
-          <label for="caffeina_orario">Caffeina — orario principale</label>
-          <input id="caffeina_orario" type="time"/>
-        </div>
-      </div>
 
-      <div class="grid-2">
-        <div>
-          <label for="focus_mattina">Focus mattina (0–10)</label>
-          <input id="focus_mattina" type="number" step="1" min="0" max="10"/>
+        <div class="grid-2">
+          <div>
+            <label for="focus_mattina">Focus mattina (0–10)</label>
+            <input id="focus_mattina" type="number" step="1" min="0" max="10"/>
+          </div>
+          <div>
+            <label for="focus_pomeriggio">Focus pomeriggio (0–10)</label>
+            <input id="focus_pomeriggio" type="number" step="1" min="0" max="10"/>
+          </div>
         </div>
-        <div>
-          <label for="focus_pomeriggio">Focus pomeriggio (0–10)</label>
-          <input id="focus_pomeriggio" type="number" step="1" min="0" max="10"/>
+
+        <div class="grid-2">
+          <div>
+            <label for="energia">Energia complessiva (0–10)</label>
+            <input id="energia" type="number" step="1" min="0" max="10"/>
+          </div>
+          <div>
+            <label for="umore">Umore (−3 … +3)</label>
+            <input id="umore" type="number" step="1" min="-3" max="3"/>
+          </div>
         </div>
-      </div>
 
-      <div class="grid-2">
         <div>
-          <label for="energia">Energia complessiva (0–10)</label>
-          <input id="energia" type="number" step="1" min="0" max="10"/>
+          <label for="stress">Stress (0–10)</label>
+          <input id="stress" type="number" step="1" min="0" max="10"/>
         </div>
+
         <div>
-          <label for="umore">Umore (−3 … +3)</label>
-          <input id="umore" type="number" step="1" min="-3" max="3"/>
+          <label for="note">Note libere</label>
+          <textarea id="note" placeholder="Eventi, distrazioni, variazioni di routine…"></textarea>
         </div>
-      </div>
 
-      <div>
-        <label for="stress">Stress (0–10)</label>
-        <input id="stress" type="number" step="1" min="0" max="10"/>
-      </div>
-
-      <div>
-        <label for="note">Note libere</label>
-        <textarea id="note" placeholder="Eventi, distrazioni, variazioni di routine…"></textarea>
-      </div>
-
-      <div class="row" style="margin-top:8px">
-        <button id="saveBtn">Salva giornata</button>
-        <button class="secondary" id="backHome1">Annulla</button>
+        <div class="row" style="margin-top:8px">
+          <button id="saveBtn">Salva giornata</button>
+          <button class="secondary" id="backHome1">Annulla</button>
+        </div>
       </div>
     </div>
-    <div class="footerbar muted small">I dati vengono salvati solo sul tuo dispositivo (Local Storage).</div>
   </div>
 
   <!-- TRENDS -->
   <div id="trends" class="screen">
     <h2>Andamento</h2>
-    <div id="trendList" class="list"></div>
     <div class="card">
       <h3 class="small muted" style="margin:0 0 6px">Grafici rapidi</h3>
       <canvas id="chartFocus"></canvas>
       <canvas id="chartEnergia"></canvas>
       <canvas id="chartSonno"></canvas>
     </div>
-    <div class="card" style="margin-top:10px;">
-      <h3 class="small muted" style="margin:0 0 6px">Dati recenti</h3>
-      <div id="pastDataList"></div>
-    </div>
+    <div id="trendList" class="list" style="margin-top:10px"></div>
     <div class="row" style="margin-top:8px">
       <button id="backHome2" class="secondary">Torna alla Home</button>
     </div>
@@ -203,13 +207,12 @@ function lsGet(){ try{ const v=localStorage.getItem(LS_KEY); return v? JSON.pars
 function lsSet(arr){ try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch(e){} }
 
 /* ====== Navigation ====== */
-const screens = {home:document.getElementById('home'), record:document.getElementById('record'), trends:document.getElementById('trends'), info:document.getElementById('info'), settings:document.getElementById('settings')};
+const screens = {home:document.getElementById('home'), trends:document.getElementById('trends'), info:document.getElementById('info'), settings:document.getElementById('settings')};
 function show(id){ Object.values(screens).forEach(s=>s.classList.remove('active')); (screens[id]||screens.home).classList.add('active'); if(id==='trends'){ renderTrends(); drawCharts(); } if(id==='home'){ renderHomeKpis(); } }
 document.getElementById('goHomeBtn').onclick=()=>show('home');
-document.getElementById('toRecordBtn').onclick=()=>show('record');
+document.getElementById('toRecordBtn').onclick=()=> openRecordModal();
 document.getElementById('toTrendsBtn').onclick=()=>show('trends');
 document.getElementById('toInfoBtn').onclick=()=>show('info');
-document.getElementById('backHome1').onclick=()=>show('home');
 document.getElementById('backHome2').onclick=()=>show('home');
 document.getElementById('backHome3').onclick=()=>show('home');
 document.getElementById('toSettingsBtn').onclick=()=>show('settings');
@@ -226,8 +229,31 @@ document.getElementById('todayLabel').textContent = new Date().toLocaleDateStrin
 
 /* ====== Record screen defaults ====== */
 const dateInput = document.getElementById('date');
-dateInput.valueAsDate = new Date();
-document.getElementById('saveBtn').onclick = saveEntry;
+  dateInput.valueAsDate = new Date();
+document.getElementById('saveBtn').onclick = ()=>{ saveEntry(); closeRecordModal(); };
+
+// modal helpers
+function openRecordModal(dateStr){
+  // if dateStr provided, populate with that entry
+  if(dateStr){ const all = lsGet(); const entry = all.find(e=>e.date===dateStr); if(entry){ dateInput.value = entry.date; document.getElementById('ore_sonno').value = entry.ore_sonno || ''; document.getElementById('qualita_sonno').value = entry.qualita_sonno || ''; document.getElementById('colazione_tipo').value = entry.colazione_tipo || ''; document.getElementById('caffeina_qta').value = entry.caffeina_qta || ''; document.getElementById('caffeina_orario').value = entry.caffeina_orario || ''; document.getElementById('focus_mattina').value = entry.focus_mattina || ''; document.getElementById('focus_pomeriggio').value = entry.focus_pomeriggio || ''; document.getElementById('energia').value = entry.energia || ''; document.getElementById('umore').value = entry.umore || ''; document.getElementById('stress').value = entry.stress || ''; document.getElementById('note').value = entry.note || ''; } }
+  // if no date provided, default to today
+  if(!dateStr){ dateInput.valueAsDate = new Date(); document.getElementById('ore_sonno').value=''; document.getElementById('qualita_sonno').value=''; document.getElementById('colazione_tipo').value=''; document.getElementById('caffeina_qta').value=''; document.getElementById('caffeina_orario').value=''; document.getElementById('focus_mattina').value=''; document.getElementById('focus_pomeriggio').value=''; document.getElementById('energia').value=''; document.getElementById('umore').value=''; document.getElementById('stress').value=''; document.getElementById('note').value=''; }
+  const modal = document.getElementById('recordModal');
+  modal.classList.add('open');
+  // ensure clicking outside closes
+  const overlay = document.getElementById('recordOverlay');
+  if(overlay){ overlay.onclick = (ev)=>{ if(ev.target === overlay) closeRecordModal(); }; }
+  // focus first input
+  setTimeout(()=>{ try{ dateInput.focus(); }catch(_){} }, 120);
+}
+
+function closeRecordModal(){ const modal = document.getElementById('recordModal'); if(modal) modal.classList.remove('open'); }
+
+// close on ESC
+document.addEventListener('keydown', (ev)=>{ if(ev.key === 'Escape'){ const m = document.getElementById('recordModal'); if(m && m.classList.contains('open')) closeRecordModal(); } });
+
+// wire cancel button in modal
+document.getElementById('backHome1').onclick = ()=>{ closeRecordModal(); };
 
 /* ====== Save ====== */
 function saveEntry(){
@@ -267,7 +293,9 @@ function renderHomeKpis(){
   cont.innerHTML='';
   const all = lsGet();
   if(!all.length){ cont.innerHTML='<div class="empty small">Nessun dato registrato ancora.</div>'; return; }
-  const last = all[all.length-1];
+  const today = new Date().toISOString().slice(0,10);
+  const last = all.find(e=> e.date === today);
+  if(!last){ cont.innerHTML='<div class="empty small">Nessun dato registrato per oggi.</div>'; return; }
   const pills = [
     ['Sonno', (last.ore_sonno||0)+' h, qual. '+(last.qualita_sonno||0)+'/10'],
     ['Colazione', last.colazione_tipo||'—'],
@@ -385,43 +413,14 @@ function drawCharts(){
   drawInteractiveLine('chartFocus', focus, 'Focus medio', all);
   drawInteractiveLine('chartEnergia', energia, 'Energia', all);
   drawInteractiveLine('chartSonno', sonno, 'Ore di sonno', all);
-  renderPastDataSection(all);
 }
 
 function renderPastDataSection(all){
-  const wrap = document.getElementById('pastDataList');
-  if(!wrap) return;
-  wrap.innerHTML='';
-  if(!all.length){ wrap.innerHTML='<div class="small muted">Nessun dato passato.</div>'; return; }
-  // show last 7 days
-  const last = all.slice(-7).reverse();
-  last.forEach(e=>{
-    const row = document.createElement('div'); row.className='small';
-    row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='6px 0';
-    row.innerHTML = `<div>${formatDate(e.date)}</div><div>${(e.energia||0)}/10 • ${((e.focus_mattina||0)+(e.focus_pomeriggio||0))/2} focus</div>`;
-    wrap.appendChild(row);
-  });
+  // no-op: this function previously rendered an extra "Dati recenti" block which was confusing.
+  // Left intentionally empty in case other code calls it; rendering removed from DOM.
 }
 
-function openEditorForDate(dateStr){
-  const all = lsGet(); const entry = all.find(x=>x.date===dateStr);
-  if(!entry){ alert('Voce non trovata'); return; }
-  // populate form
-  dateInput.value = entry.date;
-  document.getElementById('ore_sonno').value = entry.ore_sonno || '';
-  document.getElementById('qualita_sonno').value = entry.qualita_sonno || '';
-  document.getElementById('colazione_tipo').value = entry.colazione_tipo || '';
-  document.getElementById('caffeina_qta').value = entry.caffeina_qta || '';
-  document.getElementById('caffeina_orario').value = entry.caffeina_orario || '';
-  document.getElementById('focus_mattina').value = entry.focus_mattina || '';
-  document.getElementById('focus_pomeriggio').value = entry.focus_pomeriggio || '';
-  document.getElementById('energia').value = entry.energia || '';
-  document.getElementById('umore').value = entry.umore || '';
-  document.getElementById('stress').value = entry.stress || '';
-  document.getElementById('note').value = entry.note || '';
-  // switch to record screen
-  show('record');
-}
+function openEditorForDate(dateStr){ openRecordModal(dateStr); }
 
 // Interactive line with simple hover tooltip and click-to-edit
 function drawInteractiveLine(canvasId, values, label, entries){
