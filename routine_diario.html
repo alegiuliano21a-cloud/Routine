@@ -50,6 +50,7 @@
         <button id="toRecordBtn">Registra giornata</button>
         <button id="toTrendsBtn" class="secondary">Vedi andamento</button>
         <button id="toInfoBtn" class="secondary">Info</button>
+        <button id="toSettingsBtn" class="secondary">Impostazioni</button>
         <button id="exportBtn" class="secondary">Esporta JSON</button>
         <button id="clearBtn" class="secondary" title="Cancella dati locali">Pulisci tutto</button>
       </div>
@@ -152,6 +153,10 @@
       <canvas id="chartEnergia"></canvas>
       <canvas id="chartSonno"></canvas>
     </div>
+    <div class="card" style="margin-top:10px;">
+      <h3 class="small muted" style="margin:0 0 6px">Dati recenti</h3>
+      <div id="pastDataList"></div>
+    </div>
     <div class="row" style="margin-top:8px">
       <button id="backHome2" class="secondary">Torna alla Home</button>
     </div>
@@ -178,6 +183,19 @@
     </div>
   </div>
 
+  <!-- SETTINGS / IMPOSTAZIONI -->
+  <div id="settings" class="screen">
+    <h2>Impostazioni</h2>
+    <div class="card">
+      <p class="muted small">Esporta i dati o cancella il contenuto locale.</p>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <button id="exportSettingsBtn">Esporta JSON</button>
+        <button id="clearSettingsBtn" class="secondary">Pulisci tutto</button>
+        <button id="backHome4" class="secondary">Torna alla Home</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 /* ====== Storage helpers ====== */
 const LS_KEY = "routine_diario_entries_v1";
@@ -185,7 +203,7 @@ function lsGet(){ try{ const v=localStorage.getItem(LS_KEY); return v? JSON.pars
 function lsSet(arr){ try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)); } catch(e){} }
 
 /* ====== Navigation ====== */
-const screens = {home:document.getElementById('home'), record:document.getElementById('record'), trends:document.getElementById('trends'), info:document.getElementById('info')};
+const screens = {home:document.getElementById('home'), record:document.getElementById('record'), trends:document.getElementById('trends'), info:document.getElementById('info'), settings:document.getElementById('settings')};
 function show(id){ Object.values(screens).forEach(s=>s.classList.remove('active')); (screens[id]||screens.home).classList.add('active'); if(id==='trends'){ renderTrends(); drawCharts(); } if(id==='home'){ renderHomeKpis(); } }
 document.getElementById('goHomeBtn').onclick=()=>show('home');
 document.getElementById('toRecordBtn').onclick=()=>show('record');
@@ -194,6 +212,8 @@ document.getElementById('toInfoBtn').onclick=()=>show('info');
 document.getElementById('backHome1').onclick=()=>show('home');
 document.getElementById('backHome2').onclick=()=>show('home');
 document.getElementById('backHome3').onclick=()=>show('home');
+document.getElementById('toSettingsBtn').onclick=()=>show('settings');
+document.getElementById('backHome4').onclick=()=>show('home');
 
 /* ====== Theme ====== */
 const themeBtn = document.getElementById('toggleThemeBtn');
@@ -286,8 +306,25 @@ function renderTrends(){
         <span class="pill">Stress: ${e.stress||0}/10</span>
       </div>
       ${e.note? `<div class="muted small" style="margin-top:6px">${escapeHtml(e.note)}</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="secondary editEntryBtn" data-date="${e.date}">Modifica</button>
+        <button class="secondary deleteEntryBtn" data-date="${e.date}">Elimina</button>
+      </div>
     `;
     wrap.appendChild(item);
+  });
+  // attach edit handlers
+  Array.from(document.getElementsByClassName('editEntryBtn')).forEach(b=>b.onclick = (ev)=>{ const d=ev.target.getAttribute('data-date'); openEditorForDate(d); });
+  // attach delete handlers
+  Array.from(document.getElementsByClassName('deleteEntryBtn')).forEach(b=>b.onclick = (ev)=>{
+    const d = ev.target.getAttribute('data-date');
+    if(!d) return;
+    if(!confirm('Eliminare la voce del '+formatDate(d)+'?')) return;
+    let all = lsGet();
+    all = all.filter(x=> x.date !== d);
+    lsSet(all);
+    // refresh UI
+    renderTrends(); drawCharts(); renderHomeKpis();
   });
 }
 function formatDate(s){ try{ return new Date(s+'T00:00:00').toLocaleDateString('it-IT', {weekday:'short', year:'numeric', month:'short', day:'numeric'}) }catch(_){ return s; } }
@@ -345,12 +382,83 @@ function drawCharts(){
   const focus = all.map(e => ((e.focus_mattina||0) + (e.focus_pomeriggio||0))/2);
   const energia = all.map(e => (e.energia||0));
   const sonno = all.map(e => (e.ore_sonno||0));
-  drawLine('chartFocus', focus, 'Focus medio');
-  drawLine('chartEnergia', energia, 'Energia');
-  drawLine('chartSonno', sonno, 'Ore di sonno');
+  drawInteractiveLine('chartFocus', focus, 'Focus medio', all);
+  drawInteractiveLine('chartEnergia', energia, 'Energia', all);
+  drawInteractiveLine('chartSonno', sonno, 'Ore di sonno', all);
+  renderPastDataSection(all);
 }
 
-/* ====== Export / Clear ====== */
+function renderPastDataSection(all){
+  const wrap = document.getElementById('pastDataList');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  if(!all.length){ wrap.innerHTML='<div class="small muted">Nessun dato passato.</div>'; return; }
+  // show last 7 days
+  const last = all.slice(-7).reverse();
+  last.forEach(e=>{
+    const row = document.createElement('div'); row.className='small';
+    row.style.display='flex'; row.style.justifyContent='space-between'; row.style.padding='6px 0';
+    row.innerHTML = `<div>${formatDate(e.date)}</div><div>${(e.energia||0)}/10 • ${((e.focus_mattina||0)+(e.focus_pomeriggio||0))/2} focus</div>`;
+    wrap.appendChild(row);
+  });
+}
+
+function openEditorForDate(dateStr){
+  const all = lsGet(); const entry = all.find(x=>x.date===dateStr);
+  if(!entry){ alert('Voce non trovata'); return; }
+  // populate form
+  dateInput.value = entry.date;
+  document.getElementById('ore_sonno').value = entry.ore_sonno || '';
+  document.getElementById('qualita_sonno').value = entry.qualita_sonno || '';
+  document.getElementById('colazione_tipo').value = entry.colazione_tipo || '';
+  document.getElementById('caffeina_qta').value = entry.caffeina_qta || '';
+  document.getElementById('caffeina_orario').value = entry.caffeina_orario || '';
+  document.getElementById('focus_mattina').value = entry.focus_mattina || '';
+  document.getElementById('focus_pomeriggio').value = entry.focus_pomeriggio || '';
+  document.getElementById('energia').value = entry.energia || '';
+  document.getElementById('umore').value = entry.umore || '';
+  document.getElementById('stress').value = entry.stress || '';
+  document.getElementById('note').value = entry.note || '';
+  // switch to record screen
+  show('record');
+}
+
+// Interactive line with simple hover tooltip and click-to-edit
+function drawInteractiveLine(canvasId, values, label, entries){
+  const canvas = document.getElementById(canvasId);
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width = canvas.clientWidth;
+  const H = canvas.height = 160;
+  ctx.clearRect(0,0,W,H);
+  ctx.lineWidth = 2; ctx.lineJoin='round'; ctx.lineCap='round';
+  // draw base
+  drawLine(canvasId, values, label);
+  if(!values.length) return;
+  // compute points
+  const min = Math.min(...values); const max = Math.max(...values); const pad = (max - min) * 0.2 || 1; const lo = min - pad, hi = max + pad;
+  function x(i){ return 30 + (i*(W-40))/Math.max(1,values.length-1); }
+  function y(v){ const t = (v - lo)/(hi - lo); return (H-25) - t*(H-40); }
+  const points = values.map((v,i)=>({x:x(i), y:y(v), v: v, idx:i}));
+
+  // tooltip element
+  let tip = canvas._tooltip;
+  if(!tip){ tip = document.createElement('div'); tip.style.position='absolute'; tip.style.padding='6px 8px'; tip.style.background='rgba(0,0,0,0.8)'; tip.style.color='#fff'; tip.style.borderRadius='6px'; tip.style.fontSize='12px'; tip.style.pointerEvents='none'; tip.style.display='none'; tip.style.zIndex=9999; document.body.appendChild(tip); canvas._tooltip = tip; }
+
+  function showTip(ev, point){ const r = canvas.getBoundingClientRect(); tip.textContent = `${label}: ${point.v}`; tip.style.left = (r.left + point.x + 8) + 'px'; tip.style.top = (r.top + point.y - 10) + 'px'; tip.style.display='block'; }
+  function hideTip(){ tip.style.display='none'; }
+
+  canvas.onmousemove = (ev)=>{
+    const r = canvas.getBoundingClientRect(); const mx = ev.clientX - r.left; const my = ev.clientY - r.top;
+    const hit = points.find(p=> Math.hypot(p.x-mx, p.y-my) < 8 );
+    if(hit){ showTip(ev, hit); canvas.style.cursor='pointer'; }
+    else { hideTip(); canvas.style.cursor='default'; }
+  };
+  canvas.onmouseleave = ()=>{ hideTip(); };
+  canvas.onclick = (ev)=>{ const r = canvas.getBoundingClientRect(); const mx = ev.clientX - r.left; const my = ev.clientY - r.top; const hit = points.find(p=> Math.hypot(p.x-mx, p.y-my) < 8 ); if(hit){ const entry = entries[hit.idx]; if(entry) openEditorForDate(entry.date); } };
+}
+
+  /* ====== Export / Clear ====== */
 document.getElementById('exportBtn').onclick = ()=>{
   const data = lsGet();
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
@@ -363,6 +471,10 @@ document.getElementById('exportBtn').onclick = ()=>{
 document.getElementById('clearBtn').onclick = ()=>{
   if(confirm('Vuoi eliminare TUTTI i dati locali?')){ localStorage.removeItem(LS_KEY); alert('Dati rimossi.'); renderHomeKpis(); }
 };
+
+// Settings screen handlers reuse export/clear
+document.getElementById('exportSettingsBtn').onclick = ()=> document.getElementById('exportBtn').onclick();
+document.getElementById('clearSettingsBtn').onclick = ()=> document.getElementById('clearBtn').onclick();
 
 /* ====== Init ====== */
 renderHomeKpis();
